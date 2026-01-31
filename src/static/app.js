@@ -1,86 +1,185 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const activitiesList = document.getElementById("activities-list");
+  // Default activities (used if no remote data available)
+  const defaultActivities = [
+    { id: "chess", name: "Chess Club", description: "Strategize and play weekly tournaments.", spots: 20 },
+    { id: "drama", name: "Drama Club", description: "Rehearse and produce two shows per year.", spots: 30 },
+    { id: "robotics", name: "Robotics Team", description: "Design, build, and compete with robots.", spots: 12 }
+  ];
+
+  // Storage keys
+  const STORAGE_KEY = "mhs_participants_v1";
+
+  // Elements
+  const activitiesListEl = document.getElementById("activities-list");
+  const activityTemplate = document.getElementById("activity-template");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
-  const messageDiv = document.getElementById("message");
+  const emailInput = document.getElementById("email");
+  const messageEl = document.getElementById("message");
 
-  // Function to fetch activities from API
-  async function fetchActivities() {
+  // Try to load activities remotely, fall back to defaults
+  activitiesListEl.addEventListener('click', (event) => {
+    if (event.target.classList.contains('delete-btn')) {
+      const btn = event.target;
+      const li = btn.closest('li');
+      const emailEl = li && li.querySelector('.participant-email');
+      if (!emailEl) return;
+      const email = emailEl.textContent;
+      const card = btn.closest('.activity-card');
+      if (!card) return;
+      const activityId = card.dataset.activityId;
+
+      // Load, modify and persist participants
+      const participantsMap = loadParticipants();
+      const participants = participantsMap[activityId] || [];
+      const idx = participants.indexOf(email);
+      if (idx !== -1) {
+        participants.splice(idx, 1);
+        participantsMap[activityId] = participants;
+        saveParticipants(participantsMap);
+
+        // Re-render the participant list and update spots
+        const list = card.querySelector('.participants-list');
+        renderParticipantsList(list, participants);
+        const activity = { spots: parseInt(card.dataset.spots, 10) || 0 };
+        updateSpotsText(activity, participants, card.querySelector('.spots-left'));
+        showMessage('Participant unregistered', 'success');
+      }
+    }
+  });
+  fetch("activities.json")
+    .then((r) => r.ok ? r.json() : Promise.reject())
+    .catch(() => defaultActivities)
+    .then(init);
+
+  function loadParticipants() {
     try {
-      const response = await fetch("/activities");
-      const activities = await response.json();
-
-      // Clear loading message
-      activitiesList.innerHTML = "";
-
-      // Populate activities list
-      Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
-
-        const spotsLeft = details.max_participants - details.participants.length;
-
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
-
-        activitiesList.appendChild(activityCard);
-
-        // Add option to select dropdown
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        activitySelect.appendChild(option);
-      });
-    } catch (error) {
-      activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
-      console.error("Error fetching activities:", error);
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    } catch {
+      return {};
     }
   }
 
-  // Handle form submission
-  signupForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  function saveParticipants(participantsMap) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(participantsMap));
+  }
 
-    const email = document.getElementById("email").value;
-    const activity = document.getElementById("activity").value;
+  function init(activities) {
+    const participantsMap = loadParticipants();
 
-    try {
-      const response = await fetch(
-        `/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`,
-        {
-          method: "POST",
-        }
-      );
+    // Render select options
+    activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+    activities.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a.id;
+      opt.textContent = `${a.name}`;
+      activitySelect.appendChild(opt);
+    });
 
-      const result = await response.json();
+    // Render cards
+    activitiesListEl.innerHTML = "";
+    activities.forEach(a => {
+      const clone = activityTemplate.content.cloneNode(true);
+      const card = clone.querySelector(".activity-card");
+      card.dataset.activityId = a.id;
+      card.dataset.spots = a.spots; // store spots so we can update spots text later
+      clone.querySelector(".activity-name").textContent = a.name;
+      clone.querySelector(".activity-desc").textContent = a.description;
+      updateSpotsText(a, participantsMap[a.id] || [], clone.querySelector(".spots-left"));
+      const list = clone.querySelector(".participants-list");
+      renderParticipantsList(list, participantsMap[a.id] || []);
+      activitiesListEl.appendChild(clone);
+    });
 
-      if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
-        signupForm.reset();
-      } else {
-        messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
+    // Form handling
+    signupForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      const activityId = activitySelect.value;
+      if (!email || !activityId) {
+        showMessage("Please enter an email and choose an activity.", "error");
+        return;
       }
 
-      messageDiv.classList.remove("hidden");
+      const participants = participantsMap[activityId] || [];
+      const activity = activities.find(x => x.id === activityId);
+      if (!activity) {
+        showMessage("Selected activity not found.", "error");
+        return;
+      }
 
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.classList.add("hidden");
-      }, 5000);
-    } catch (error) {
-      messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
-      messageDiv.classList.remove("hidden");
-      console.error("Error signing up:", error);
+      if (participants.includes(email)) {
+        showMessage("This email is already signed up for the activity.", "error");
+        return;
+      }
+
+      if (participants.length >= activity.spots) {
+        showMessage("Sorry, no spots left in this activity.", "error");
+        return;
+      }
+
+      participants.push(email);
+      participantsMap[activityId] = participants;
+      saveParticipants(participantsMap);
+
+      // Update the card for this activity
+      const card = activitiesListEl.querySelector(`.activity-card[data-activity-id="${activityId}"]`);
+      if (card) {
+        const list = card.querySelector(".participants-list");
+        renderParticipantsList(list, participants);
+        const spotsEl = card.querySelector(".spots-left");
+        updateSpotsText(activity, participants, spotsEl);
+      }
+
+      showMessage("Signed up successfully!", "success");
+      signupForm.reset();
+    });
+  }
+
+  function renderParticipantsList(ulEl, participants) {
+    ulEl.innerHTML = "";
+    if (!participants || participants.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty";
+      li.textContent = "No participants yet";
+      ulEl.appendChild(li);
+      return;
     }
-  });
 
-  // Initialize app
-  fetchActivities();
+    participants.forEach(email => {
+      const li = document.createElement("li");
+      const avatar = document.createElement("span");
+      avatar.className = "avatar";
+      avatar.textContent = email[0].toUpperCase() || "?";
+      const txt = document.createElement("span");
+      txt.className = "participant-email";
+      txt.textContent = email;
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.type = "button";
+      delBtn.title = "Unregister participant";
+      delBtn.textContent = "🗑️";
+
+      li.appendChild(avatar);
+      li.appendChild(txt);
+      li.appendChild(delBtn);
+      ulEl.appendChild(li);
+    });
+  }
+
+  function updateSpotsText(activity, participants, el) {
+    const used = participants ? participants.length : 0;
+    const left = Math.max(0, (activity.spots || 0) - used);
+    el.textContent = `${left} spot${left === 1 ? "" : "s"} left`;
+  }
+
+  function showMessage(text, type = "info") {
+    messageEl.textContent = text;
+    messageEl.className = type === "success" ? "message success" : (type === "error" ? "message error" : "message");
+    messageEl.classList.remove("hidden");
+    setTimeout(() => {
+      messageEl.classList.add("hidden");
+    }, 3000);
+  }
 });

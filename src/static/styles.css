@@ -58,11 +58,12 @@ section h3 {
 }
 
 .activity-card {
-  margin-bottom: 15px;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background-color: #f9f9f9;
+  border: 1px solid #e6e9ee;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  background: linear-gradient(180deg, #fff, #fbfdff);
+  box-shadow: 0 1px 3px rgba(20, 30, 50, 0.04);
 }
 
 .activity-card h4 {
@@ -72,6 +73,89 @@ section h3 {
 
 .activity-card p {
   margin-bottom: 8px;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.activity-meta .spots-left {
+  font-size: 0.9rem;
+  color: #555;
+  background: #f1f6ff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+}
+
+.participants-section {
+  margin-top: 0.75rem;
+}
+
+.participants-section h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #222;
+}
+
+.participants-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.participants-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  background: #fcfeff;
+  border: 1px solid #f0f4f8;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #c62828;
+  font-size: 1rem;
+  margin-left: auto;
+  padding: 0.2rem;
+}
+
+.delete-btn:hover {
+  color: #b71c1c;
+}
+
+.participants-list li.empty {
+  color: #7b8794;
+  font-style: italic;
+  padding-left: 0.6rem;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6ea8ff, #4a7cff);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex: 0 0 32px;
+}
+
+.participant-email {
+  font-size: 0.95rem;
+  color: #0b2447;
 }
 
 .form-group {
@@ -108,28 +192,24 @@ button:hover {
   background-color: #3949ab;
 }
 
+/* Message styles */
 .message {
-  margin-top: 20px;
-  padding: 10px;
-  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 0.5rem;
 }
 
-.success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
+.message.success {
+  background: #e6fbf1;
+  color: #046a3b;
+  border: 1px solid #c7f1db;
 }
 
-.error {
-  background-color: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
-}
-
-.info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #bee5eb;
+.message.error {
+  background: #fff1f0;
+  color: #8f1f20;
+  border: 1px solid #ffd6d6;
 }
 
 .hidden {
