@@ -17,8 +17,24 @@
         <h3>Available Activities</h3>
         <div id="activities-list">
           <!-- Activities will be loaded here -->
-          <p>Loading activities...</p>
         </div>
+
+        <!-- Template for activity cards -->
+        <template id="activity-template">
+          <article class="activity-card" data-activity-id="">
+            <header class="activity-header">
+              <h4 class="activity-name"></h4>
+              <div class="activity-meta">
+                <span class="spots-left"></span>
+              </div>
+            </header>
+            <p class="activity-desc"></p>
+            <section class="participants-section">
+              <h5>Participants</h5>
+              <ul class="participants-list"></ul>
+            </section>
+          </article>
+        </template>
       </section>
 
       <section id="signup-container">
