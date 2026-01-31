@@ -119,6 +119,20 @@ section h3 {
   border: 1px solid #f0f4f8;
 }
 
+.delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #c62828;
+  font-size: 1rem;
+  margin-left: auto;
+  padding: 0.2rem;
+}
+
+.delete-btn:hover {
+  color: #b71c1c;
+}
+
 .participants-list li.empty {
   color: #7b8794;
   font-style: italic;

@@ -18,6 +18,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageEl = document.getElementById("message");
 
   // Try to load activities remotely, fall back to defaults
+  activitiesListEl.addEventListener('click', (event) => {
+    if (event.target.classList.contains('delete-btn')) {
+      const btn = event.target;
+      const li = btn.closest('li');
+      const emailEl = li && li.querySelector('.participant-email');
+      if (!emailEl) return;
+      const email = emailEl.textContent;
+      const card = btn.closest('.activity-card');
+      if (!card) return;
+      const activityId = card.dataset.activityId;
+
+      // Load, modify and persist participants
+      const participantsMap = loadParticipants();
+      const participants = participantsMap[activityId] || [];
+      const idx = participants.indexOf(email);
+      if (idx !== -1) {
+        participants.splice(idx, 1);
+        participantsMap[activityId] = participants;
+        saveParticipants(participantsMap);
+
+        // Re-render the participant list and update spots
+        const list = card.querySelector('.participants-list');
+        renderParticipantsList(list, participants);
+        const activity = { spots: parseInt(card.dataset.spots, 10) || 0 };
+        updateSpotsText(activity, participants, card.querySelector('.spots-left'));
+        showMessage('Participant unregistered', 'success');
+      }
+    }
+  });
   fetch("activities.json")
     .then((r) => r.ok ? r.json() : Promise.reject())
     .catch(() => defaultActivities)
@@ -53,6 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const clone = activityTemplate.content.cloneNode(true);
       const card = clone.querySelector(".activity-card");
       card.dataset.activityId = a.id;
+      card.dataset.spots = a.spots; // store spots so we can update spots text later
       clone.querySelector(".activity-name").textContent = a.name;
       clone.querySelector(".activity-desc").textContent = a.description;
       updateSpotsText(a, participantsMap[a.id] || [], clone.querySelector(".spots-left"));
@@ -124,8 +154,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const txt = document.createElement("span");
       txt.className = "participant-email";
       txt.textContent = email;
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.type = "button";
+      delBtn.title = "Unregister participant";
+      delBtn.textContent = "🗑️";
+
       li.appendChild(avatar);
       li.appendChild(txt);
+      li.appendChild(delBtn);
       ulEl.appendChild(li);
     });
   }
